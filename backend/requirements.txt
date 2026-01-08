@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+requests
+beautifulsoup4
+sqlalchemy
+psycopg2-binary
+pymysql
+langchain
+langchain-google-genai
+python-dotenv
+
+

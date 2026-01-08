@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>AI Wiki Quiz Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        --bg: #0f172a;
+        --bg-elevated: #111827;
+        --accent: #4f46e5;
+        --accent-soft: rgba(79, 70, 229, 0.12);
+        --border-subtle: #1f2937;
+        --text: #e5e7eb;
+        --text-muted: #9ca3af;
+        --danger: #ef4444;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: radial-gradient(circle at top, #1f2937 0, #020617 45%);
+        color: var(--text);
+      }
+
+      .app-shell {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 32px 16px 40px;
+      }
+
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+
+      .title-block h1 {
+        margin: 0;
+        font-size: 28px;
+        letter-spacing: 0.02em;
+      }
+
+      .title-block p {
+        margin: 4px 0 0;
+        font-size: 14px;
+        color: var(--text-muted);
+      }
+
+      .badge {
+        border-radius: 999px;
+        padding: 4px 10px;
+        border: 1px solid var(--border-subtle);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+      }
+
+      .tabs {
+        display: inline-flex;
+        border-radius: 999px;
+        padding: 4px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid var(--border-subtle);
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.75);
+      }
+
+      .tab {
+        border-radius: 999px;
+        padding: 6px 14px;
+        font-size: 13px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: all 0.16s ease;
+      }
+
+      .tab.active {
+        background: var(--accent-soft);
+        color: var(--text);
+      }
+
+      .tab span.label {
+        font-weight: 500;
+      }
+
+      .tab span.meta {
+        font-size: 11px;
+        opacity: 0.85;
+      }
+
+      .surface {
+        margin-top: 20px;
+        border-radius: 24px;
+        background: radial-gradient(circle at top left, #111827, #020617);
+        border: 1px solid rgba(31, 41, 55, 0.9);
+        padding: 20px 20px 24px;
+        box-shadow: 0 22px 60px rgba(15, 23, 42, 0.9);
+      }
+
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .section-header h2 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .section-header p {
+        margin: 2px 0 0;
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+
+      .field-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+      }
+
+      .field-row input[type="text"] {
+        flex: 1;
+        min-width: 220px;
+        padding: 9px 11px;
+        border-radius: 999px;
+        border: 1px solid var(--border-subtle);
+        background: rgba(15, 23, 42, 0.9);
+        color: var(--text);
+        font-size: 13px;
+        outline: none;
+      }
+
+      .field-row input[type="text"]::placeholder {
+        color: #4b5563;
+      }
+
+      .button {
+        border-radius: 999px;
+        padding: 9px 16px;
+        border: none;
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        color: white;
+        box-shadow: 0 12px 30px rgba(79, 70, 229, 0.55);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+      }
+
+      .button:disabled {
+        opacity: 0.55;
+        cursor: default;
+        box-shadow: none;
+      }
+
+      .button:not(:disabled):hover {
+        transform: translateY(-1px);
+        box-shadow: 0 16px 35px rgba(79, 70, 229, 0.75);
+      }
+
+      .pill {
+        border-radius: 999px;
+        padding: 4px 10px;
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid var(--border-subtle);
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+
+      .status-line {
+        font-size: 13px;
+        color: var(--text-muted);
+        min-height: 18px;
+      }
+
+      .status-line.error {
+        color: var(--danger);
+      }
+
+      .layout-cols {
+        display: grid;
+        grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.3fr);
+        gap: 16px;
+        margin-top: 12px;
+      }
+
+      @media (max-width: 900px) {
+        .layout-cols {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
+      .card {
+        border-radius: 18px;
+        padding: 14px 14px 16px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid rgba(31, 41, 55, 0.9);
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .card-title {
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .card-subtitle {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .pill-muted {
+        border-radius: 999px;
+        padding: 3px 8px;
+        font-size: 11px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-muted);
+      }
+
+      .quiz-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 4px;
+        max-height: 390px;
+        overflow: auto;
+        padding-right: 3px;
+      }
+
+      .quiz-q {
+        border-radius: 14px;
+        padding: 10px 11px 10px;
+        background: rgba(17, 24, 39, 0.9);
+        border: 1px solid #1f2937;
+      }
+
+      .quiz-q-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+      }
+
+      .quiz-q-title {
+        font-size: 13px;
+        font-weight: 500;
+      }
+
+      .badge-difficulty {
+        border-radius: 999px;
+        padding: 2px 8px;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+      }
+
+      .diff-easy {
+        background: rgba(34, 197, 94, 0.12);
+        color: #4ade80;
+      }
+
+      .diff-medium {
+        background: rgba(234, 179, 8, 0.12);
+        color: #facc15;
+      }
+
+      .diff-hard {
+        background: rgba(248, 113, 113, 0.12);
+        color: #f87171;
+      }
+
+      .options-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+
+      @media (max-width: 700px) {
+        .options-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
+      .option-pill {
+        border-radius: 999px;
+        padding: 5px 9px;
+        font-size: 12px;
+        border: 1px solid var(--border-subtle);
+        background: rgba(15, 23, 42, 0.9);
+        color: var(--text);
+      }
+
+      .option-pill.correct {
+        border-color: rgba(34, 197, 94, 0.9);
+        background: rgba(21, 128, 61, 0.22);
+      }
+
+      .meta-line {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .meta-kv {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 8px;
+        font-size: 12px;
+      }
+
+      .entity-pill {
+        border-radius: 999px;
+        padding: 3px 8px;
+        background: rgba(17, 24, 39, 0.9);
+        border: 1px dashed #374151;
+        color: var(--text-muted);
+      }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      .table th,
+      .table td {
+        padding: 9px 8px;
+        text-align: left;
+        border-bottom: 1px solid rgba(31, 41, 55, 0.8);
+      }
+
+      .table th {
+        font-size: 12px;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      .table tbody tr:hover {
+        background: rgba(15, 23, 42, 0.7);
+      }
+
+      .link-button {
+        border-radius: 999px;
+        border: 1px solid var(--border-subtle);
+        padding: 4px 10px;
+        font-size: 12px;
+        background: rgba(15, 23, 42, 0.9);
+        color: var(--text);
+        cursor: pointer;
+      }
+
+      .chip {
+        border-radius: 999px;
+        padding: 3px 8px;
+        font-size: 11px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-muted);
+      }
+
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.8);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        z-index: 40;
+      }
+
+      .modal-backdrop.open {
+        display: flex;
+      }
+
+      .modal {
+        width: 100%;
+        max-width: 780px;
+        max-height: 90vh;
+        border-radius: 20px;
+        background: #020617;
+        border: 1px solid #1f2937;
+        box-shadow: 0 22px 60px rgba(15, 23, 42, 0.95);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .modal-header {
+        padding: 12px 16px 10px;
+        border-bottom: 1px solid #1f2937;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .modal-body {
+        padding: 12px 16px 16px;
+        overflow: auto;
+      }
+
+      .modal-footer {
+        padding: 10px 16px;
+        border-top: 1px solid #1f2937;
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .take-quiz-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--text-muted);
+        cursor: pointer;
+      }
+
+      .take-quiz-toggle input {
+        accent-color: var(--accent);
+      }
+
+      .answer-input-row {
+        margin-top: 6px;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .answer-input-row input {
+        border-radius: 999px;
+        border: 1px solid var(--border-subtle);
+        background: rgba(15, 23, 42, 0.9);
+        color: var(--text);
+        padding: 4px 8px;
+        font-size: 12px;
+        width: 60px;
+      }
+
+      .answer-input-row span {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .score-line {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <div class="header">
+        <div class="title-block">
+          <h1>AI Wiki Quiz Generator</h1>
+          <p>Paste a Wikipedia URL, generate a quiz, and revisit your history.</p>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px">
+          <div class="badge">DeepKlarity • Prototype</div>
+          <div class="tabs">
+            <button class="tab active" data-tab="generate">
+              <span class="label">Generate quiz</span>
+              <span class="meta">LLM</span>
+            </button>
+            <button class="tab" data-tab="history">
+              <span class="label">Past quizzes</span>
+              <span class="meta">History</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="surface" id="tab-generate">
+        <div class="section-header">
+          <div>
+            <h2>Generate quiz from Wikipedia</h2>
+            <p>We scrape the article, analyze it with Gemini via LangChain, and build a quiz.</p>
+          </div>
+          <div class="pill">Backend: FastAPI · DB: SQL · LLM: Gemini</div>
+        </div>
+
+        <div class="field-row">
+          <input
+            id="url-input"
+            type="text"
+            placeholder="Paste Wikipedia URL, e.g. https://en.wikipedia.org/wiki/Alan_Turing"
+          />
+          <button id="generate-btn" class="button">
+            <span>Generate quiz</span>
+          </button>
+        </div>
+        <div id="status-line" class="status-line"></div>
+
+        <div class="layout-cols" id="result-area" style="display: none">
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title" id="article-title"></div>
+                <div class="card-subtitle" id="article-url"></div>
+              </div>
+            </div>
+            <p class="meta-line" id="article-summary"></p>
+
+            <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px">
+              <div class="pill-muted" id="sections-pill"></div>
+            </div>
+
+            <div style="margin-top: 10px; display: grid; gap: 4px" id="entities-area"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Related topics</div>
+                <div class="card-subtitle">Suggested next Wikipedia reads</div>
+              </div>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px" id="related-topics"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 14px">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Quiz</div>
+              <div class="card-subtitle">
+                Generated from the article content. Optionally take the quiz below.
+              </div>
+            </div>
+            <!-- take-quiz toggle removed -->
+          </div>
+          <div class="quiz-list" id="quiz-list"></div>
+          <div class="score-line" id="score-line"></div>
+        </div>
+      </div>
+
+      <div class="surface" id="tab-history" style="display: none">
+        <div class="section-header">
+          <div>
+            <h2>Past quizzes</h2>
+            <p>Browse and reopen quizzes saved in the database.</p>
+          </div>
+          <button class="button" id="refresh-history-btn">
+            <span>Refresh</span>
+          </button>
+        </div>
+        <div class="card">
+          <table class="table" id="history-table">
+            <thead>
+              <tr>
+                <th style="width: 26%">Title</th>
+                <th style="width: 32%">URL</th>
+                <th style="width: 22%">Summary</th>
+                <th style="width: 12%">Created</th>
+                <th style="width: 8%"></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="details-modal">
+      <div class="modal">
+        <div class="modal-header">
+          <div>
+            <div class="card-title" id="modal-title"></div>
+            <div class="card-subtitle" id="modal-url"></div>
+          </div>
+          <button class="link-button" id="close-modal-btn">Close</button>
+        </div>
+        <div class="modal-body">
+          <div class="card" style="margin-bottom: 10px">
+            <div class="card-subtitle" id="modal-summary"></div>
+          </div>
+          <div class="layout-cols">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">Entities & sections</div>
+              </div>
+              <div id="modal-entities"></div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">Related topics</div>
+              </div>
+              <div id="modal-related"></div>
+            </div>
+          </div>
+          <div class="card" style="margin-top: 12px">
+            <div class="card-header">
+              <div class="card-title">Quiz</div>
+            </div>
+            <div class="quiz-list" id="modal-quiz"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="link-button" id="open-url-btn">Open article</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API_BASE = "http://localhost:8000";
+
+      const tabs = document.querySelectorAll(".tab");
+      const tabGenerate = document.getElementById("tab-generate");
+      const tabHistory = document.getElementById("tab-history");
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          tabs.forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+          const target = tab.dataset.tab;
+          if (target === "generate") {
+            tabGenerate.style.display = "";
+            tabHistory.style.display = "none";
+          } else {
+            tabGenerate.style.display = "none";
+            tabHistory.style.display = "";
+            loadHistory();
+          }
+        });
+      });
+
+      const urlInput = document.getElementById("url-input");
+      const generateBtn = document.getElementById("generate-btn");
+      const statusLine = document.getElementById("status-line");
+      const resultArea = document.getElementById("result-area");
+      const articleTitle = document.getElementById("article-title");
+      const articleUrl = document.getElementById("article-url");
+      const articleSummary = document.getElementById("article-summary");
+      const sectionsPill = document.getElementById("sections-pill");
+      const entitiesArea = document.getElementById("entities-area");
+      const relatedTopics = document.getElementById("related-topics");
+      const quizList = document.getElementById("quiz-list");
+      // takeQuizToggle removed
+      const scoreLine = document.getElementById("score-line");
+
+      let currentQuiz = null;
+
+      function setStatus(text, isError = false) {
+        statusLine.textContent = text || "";
+        statusLine.classList.toggle("error", !!isError);
+      }
+
+      function difficultyClass(diff) {
+        if (!diff) return "";
+        const d = diff.toLowerCase();
+        if (d === "easy") return "diff-easy";
+        if (d === "hard") return "diff-hard";
+        return "diff-medium";
+      }
+
+      function renderArticleDetails(data) {
+        resultArea.style.display = "grid";
+        articleTitle.textContent = data.title || "Untitled article";
+        articleUrl.textContent = data.url || "";
+        articleSummary.textContent = data.summary || "No summary available.";
+
+        const sections = Array.isArray(data.sections) ? data.sections : [];
+        sectionsPill.textContent = sections.length
+          ? "Sections: " + sections.join(" • ")
+          : "Sections not available";
+
+        entitiesArea.innerHTML = "";
+        const entities = data.key_entities || {};
+        const entries = Object.entries(entities);
+        if (!entries.length) {
+          entitiesArea.innerHTML =
+            '<span class="meta-line">No entities extracted.</span>';
+        } else {
+          entries.forEach(([key, arr]) => {
+            const wrap = document.createElement("div");
+            wrap.className = "meta-kv";
+            const label = document.createElement("span");
+            label.style.color = "#9ca3af";
+            label.textContent = key + ":";
+            wrap.appendChild(label);
+            (arr || []).forEach((v) => {
+              const pill = document.createElement("span");
+              pill.className = "entity-pill";
+              pill.textContent = v;
+              wrap.appendChild(pill);
+            });
+            entitiesArea.appendChild(wrap);
+          });
+        }
+
+        relatedTopics.innerHTML = "";
+        (data.related_topics || []).forEach((topic) => {
+          const chip = document.createElement("span");
+          chip.className = "chip";
+          chip.textContent = topic;
+          relatedTopics.appendChild(chip);
+        });
+      }
+
+      function renderQuizQuestions(container, quiz, opts = {}) {
+        const { forModal = false } = opts;
+        container.innerHTML = "";
+        if (!quiz || !quiz.length) {
+          container.innerHTML =
+            '<span class="meta-line">No quiz questions available.</span>';
+          return;
+        }
+
+        quiz.forEach((q, idx) => {
+          const block = document.createElement("div");
+          block.className = "quiz-q";
+
+          const header = document.createElement("div");
+          header.className = "quiz-q-header";
+          const title = document.createElement("div");
+          title.className = "quiz-q-title";
+          title.textContent = `${idx + 1}. ${q.question}`;
+          header.appendChild(title);
+
+          const diff = document.createElement("span");
+          diff.className = `badge-difficulty ${difficultyClass(q.difficulty)}`;
+          diff.textContent = (q.difficulty || "").toUpperCase() || "N/A";
+          header.appendChild(diff);
+          block.appendChild(header);
+
+          let selectedIdx = null;
+          let submitted = false;
+
+          const optionsGrid = document.createElement("div");
+          optionsGrid.className = "options-grid";
+          (q.options || []).forEach((opt, i) => {
+            const pill = document.createElement("div");
+            pill.className = "option-pill";
+            const letter = String.fromCharCode(65 + i);
+            pill.textContent = `${letter}. ${opt}`;
+            pill.dataset.idx = i;
+            pill.style.cursor = "pointer";
+            pill.addEventListener("click", () => {
+              if (submitted) return;
+              selectedIdx = i;
+              Array.from(optionsGrid.children).forEach((el, j) => {
+                el.classList.toggle("selected", j === i);
+              });
+            });
+            optionsGrid.appendChild(pill);
+          });
+          block.appendChild(optionsGrid);
+
+          if (!forModal) {
+            const submitBtn = document.createElement("button");
+            submitBtn.className = "button";
+            submitBtn.textContent = "Submit";
+            submitBtn.style.marginTop = "8px";
+            submitBtn.addEventListener("click", () => {
+              if (submitted || selectedIdx === null) return;
+              submitted = true;
+              const correctIdx = (q.options || []).findIndex((opt) => opt === q.answer);
+              Array.from(optionsGrid.children).forEach((el, i) => {
+                el.classList.remove("selected");
+                if (i === correctIdx) el.classList.add("correct");
+                if (i === selectedIdx && i !== correctIdx) el.classList.add("incorrect");
+              });
+            });
+            block.appendChild(submitBtn);
+          }
+
+          container.appendChild(block);
+        });
+      }
+
+      // Removed legacy scoring and take-quiz toggle handlers
+
+      async function generateQuiz() {
+        const url = urlInput.value.trim();
+        if (!url) {
+          setStatus("Please paste a Wikipedia URL.", true);
+          return;
+        }
+        if (!url.includes("wikipedia.org/wiki/")) {
+          setStatus("This URL does not look like a Wikipedia article.", true);
+          return;
+        }
+
+        generateBtn.disabled = true;
+        setStatus("Generating quiz… this may take a few seconds.");
+        try {
+          const resp = await fetch(`${API_BASE}/api/quizzes/generate`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url }),
+          });
+          if (!resp.ok) {
+            const data = await resp.json().catch(() => ({}));
+            throw new Error(data.detail || `HTTP ${resp.status}`);
+          }
+          const data = await resp.json();
+          currentQuiz = data;
+          renderArticleDetails(data);
+          renderQuizQuestions(quizList, data.quiz);
+          scoreLine.textContent = "";
+          setStatus("Quiz ready.");
+          loadHistory();
+        } catch (err) {
+          console.error(err);
+          setStatus("Failed to generate quiz: " + err.message, true);
+        } finally {
+          generateBtn.disabled = false;
+        }
+      }
+
+      generateBtn.addEventListener("click", generateQuiz);
+      urlInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          generateQuiz();
+        }
+      });
+
+      const historyTableBody = document.querySelector("#history-table tbody");
+      const refreshHistoryBtn = document.getElementById("refresh-history-btn");
+
+      async function loadHistory() {
+        try {
+          const resp = await fetch(`${API_BASE}/api/quizzes`);
+          const data = await resp.json();
+          historyTableBody.innerHTML = "";
+          data.forEach((item) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${item.title || "Untitled"}</td>
+              <td style="max-width: 260px; word-break: break-all">${item.url}</td>
+              <td style="max-width: 240px; color: #9ca3af">
+                ${(item.summary || "").slice(0, 150)}${(item.summary || "").length > 150 ? "…" : ""}
+              </td>
+              <td>${item.created_at ? new Date(item.created_at).toLocaleString() : ""}</td>
+              <td><button class="link-button" data-id="${item.id}">Details</button></td>
+            `;
+            historyTableBody.appendChild(tr);
+          });
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      refreshHistoryBtn.addEventListener("click", loadHistory);
+
+      historyTableBody.addEventListener("click", async (e) => {
+        const btn = e.target.closest("button[data-id]");
+        if (!btn) return;
+        const id = btn.dataset.id;
+        try {
+          const resp = await fetch(`${API_BASE}/api/quizzes/${id}`);
+          const data = await resp.json();
+          openDetailsModal(data);
+        } catch (err) {
+          console.error(err);
+        }
+      });
+
+      const modalBackdrop = document.getElementById("details-modal");
+      const closeModalBtn = document.getElementById("close-modal-btn");
+      const modalTitle = document.getElementById("modal-title");
+      const modalUrl = document.getElementById("modal-url");
+      const modalSummary = document.getElementById("modal-summary");
+      const modalEntities = document.getElementById("modal-entities");
+      const modalRelated = document.getElementById("modal-related");
+      const modalQuiz = document.getElementById("modal-quiz");
+      const openUrlBtn = document.getElementById("open-url-btn");
+      let modalCurrent = null;
+
+      function openDetailsModal(data) {
+        modalCurrent = data;
+        modalTitle.textContent = data.title || "Untitled";
+        modalUrl.textContent = data.url || "";
+        modalSummary.textContent = data.summary || "No summary available.";
+
+        modalEntities.innerHTML = "";
+        const ent = data.key_entities || {};
+        const entEntries = Object.entries(ent);
+        if (!entEntries.length) {
+          modalEntities.innerHTML =
+            '<span class="meta-line">No entities extracted.</span>';
+        } else {
+          entEntries.forEach(([k, arr]) => {
+            const wrap = document.createElement("div");
+            wrap.className = "meta-kv";
+            const label = document.createElement("span");
+            label.style.color = "#9ca3af";
+            label.textContent = k + ":";
+            wrap.appendChild(label);
+            (arr || []).forEach((v) => {
+              const pill = document.createElement("span");
+              pill.className = "entity-pill";
+              pill.textContent = v;
+              wrap.appendChild(pill);
+            });
+            modalEntities.appendChild(wrap);
+          });
+        }
+
+        modalRelated.innerHTML = "";
+        (data.related_topics || []).forEach((topic) => {
+          const chip = document.createElement("span");
+          chip.className = "chip";
+          chip.textContent = topic;
+          modalRelated.appendChild(chip);
+        });
+
+        renderQuizQuestions(modalQuiz, data.quiz, { forModal: true });
+
+        modalBackdrop.classList.add("open");
+      }
+
+      function closeDetailsModal() {
+        modalBackdrop.classList.remove("open");
+        modalCurrent = null;
+      }
+
+      closeModalBtn.addEventListener("click", closeDetailsModal);
+      modalBackdrop.addEventListener("click", (e) => {
+        if (e.target === modalBackdrop) {
+          closeDetailsModal();
+        }
+      });
+
+      openUrlBtn.addEventListener("click", () => {
+        if (modalCurrent && modalCurrent.url) {
+          window.open(modalCurrent.url, "_blank");
+        }
+      });
+
+      loadHistory();
+    </script>
+  </body>
+</html>
+
+

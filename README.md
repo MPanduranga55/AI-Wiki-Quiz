@@ -125,17 +125,6 @@ Implemented in `backend/app/prompts.py`:
 These prompts are wired into Gemini via `backend/app/llm.py`, and all outputs are post-processed
 to ensure valid JSON before being stored and served.
 
-### Testing & screenshots
 
-For the assignment submission:
-
-- Start the backend (`uvicorn app.main:app --reload`)
-- Open `frontend/index.html` in a browser
-- Test multiple URLs (e.g. Alan Turing, Artificial intelligence)
-- Save responses into `sample_data/`
-- Capture screenshots of:
-  - Tab 1 (Generate quiz view with a populated quiz)
-  - Tab 2 (History table)
-  - The details modal for a past quiz
 
 

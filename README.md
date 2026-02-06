@@ -1,4 +1,4 @@
-## DeepKlarity Technologies – AI Wiki Quiz Generator
+## AI Wiki Quiz Generator
 
 Minimal implementation of the assignment: a FastAPI backend that scrapes Wikipedia
 HTML, uses Gemini via LangChain to generate a quiz, persists data in SQL, and a
